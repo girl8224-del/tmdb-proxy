@@ -1,5 +1,3 @@
-const axios = require('axios');
-
 const TMDB_API_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
@@ -20,25 +18,33 @@ module.exports = async (req, res) => {
       return;
     }
 
-    let baseUrl;
-    if (path.startsWith('t/p/')) {
+    let baseUrl, apiPath;
+    if (path.startsWith('api/')) {
+      baseUrl = TMDB_API_BASE;
+      apiPath = path.slice(4); // убираем 'api/'
+    } else if (path.startsWith('image/')) {
       baseUrl = TMDB_IMAGE_BASE;
+      apiPath = path.slice(6); // убираем 'image/'
     } else {
       baseUrl = TMDB_API_BASE;
+      apiPath = path;
     }
 
-    const fullUrl = `${baseUrl}/${path}?${new URLSearchParams(query)}`;
-    const response = await axios.get(fullUrl, {
-      responseType: path.startsWith('t/p/') ? 'stream' : 'json',
-    });
+    const fullUrl = `${baseUrl}/${apiPath}?${new URLSearchParams(query)}`;
+    console.log('Proxying to:', fullUrl);
 
-    if (path.startsWith('t/p/')) {
-      res.setHeader('Content-Type', response.headers['content-type']);
-      response.data.pipe(res);
+    const response = await fetch(fullUrl);
+
+    if (path.startsWith('image/')) {
+      const buffer = await response.arrayBuffer();
+      res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+      res.status(200).send(Buffer.from(buffer));
     } else {
-      res.status(200).json(response.data);
+      const data = await response.json();
+      res.status(200).json(data);
     }
   } catch (error) {
-    res.status(error.response?.status || 500).json({ error: error.message });
+    console.error('Proxy error:', error);
+    res.status(500).json({ error: error.message });
   }
 };

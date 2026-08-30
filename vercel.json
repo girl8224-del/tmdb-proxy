@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/3/(.*)", "destination": "/api/tmdb?path=3/$1" },
-    { "source": "/t/p/(.*)", "destination": "/api/tmdb?path=t/p/$1" }
+    { "source": "/3/(.*)", "destination": "/api/tmdb?path=api/$1" },
+    { "source": "/t/p/(.*)", "destination": "/api/tmdb?path=image/$1" }
   ]
 }
